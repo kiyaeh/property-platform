@@ -17,9 +17,13 @@ export class PrismaService
   private readonly pool: Pool;
 
   constructor(private readonly configService: ConfigService) {
-    const connectionString = configService.get<string>('DATABASE_URL', {
-      infer: true,
-    });
+    const connectionString =
+      configService.get<string>('DIRECT_DATABASE_URL', {
+        infer: true,
+      }) ??
+      configService.get<string>('DATABASE_URL', {
+        infer: true,
+      });
     if (!connectionString) {
       throw new Error('DATABASE_URL is required for Prisma adapter setup');
     }

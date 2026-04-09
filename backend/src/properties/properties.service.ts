@@ -49,7 +49,7 @@ export class PropertiesService {
         : {}),
     };
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.property.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -82,7 +82,7 @@ export class PropertiesService {
       ...(query.status ? { status: query.status } : {}),
     };
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.property.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -130,7 +130,7 @@ export class PropertiesService {
         : {}),
     };
 
-    const [data, total] = await this.prisma.$transaction([
+    const [data, total] = await Promise.all([
       this.prisma.property.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -462,7 +462,7 @@ export class PropertiesService {
       publishedProperties,
       draftProperties,
       archivedProperties,
-    ] = await this.prisma.$transaction([
+    ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { role: 'OWNER' } }),
       this.prisma.property.count({ where: { deletedAt: null } }),
