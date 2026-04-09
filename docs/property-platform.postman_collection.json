@@ -1,0 +1,169 @@
+{
+  "info": {
+    "name": "Property Platform API",
+    "description": "Collection for the Mini Multi-Tenant Property Listing Platform exam submission.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "token", "value": "" },
+    { "key": "propertyId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Owner One\",\n  \"email\": \"owner@example.com\",\n  \"password\": \"Password123\",\n  \"role\": \"OWNER\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"owner@example.com\",\n  \"password\": \"Password123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Me",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/auth/me"
+      }
+    },
+    {
+      "name": "Public - List Properties",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/properties?location=&minPrice=&maxPrice=&page=1&limit=10"
+      }
+    },
+    {
+      "name": "Public - Property Detail",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/properties/{{propertyId}}"
+      }
+    },
+    {
+      "name": "Owner - Create Property",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/owner/properties",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Studio in City Center\",\n  \"description\": \"Close to transport and market\",\n  \"location\": \"Addis Ababa\",\n  \"price\": 1200,\n  \"images\": [\n    {\n      \"url\": \"https://example.com/image1.jpg\",\n      \"mimeType\": \"image/jpeg\",\n      \"size\": 120000\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Owner - Update Draft",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/owner/properties/{{propertyId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"price\": 1400\n}"
+        }
+      }
+    },
+    {
+      "name": "Owner - Publish Property",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/owner/properties/{{propertyId}}/publish"
+      }
+    },
+    {
+      "name": "Owner - Soft Delete Property",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/owner/properties/{{propertyId}}"
+      }
+    },
+    {
+      "name": "User - Add Favorite",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/users/favorites/{{propertyId}}"
+      }
+    },
+    {
+      "name": "User - Remove Favorite",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/users/favorites/{{propertyId}}"
+      }
+    },
+    {
+      "name": "User - List Favorites",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/users/favorites"
+      }
+    },
+    {
+      "name": "User - Contact Owner",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/properties/{{propertyId}}/contact",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Is this property still available next month?\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Admin - List Properties",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/admin/properties?page=1&limit=10"
+      }
+    },
+    {
+      "name": "Admin - Disable Property",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/admin/properties/{{propertyId}}/disable"
+      }
+    },
+    {
+      "name": "Admin - Metrics",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/admin/properties/metrics"
+      }
+    }
+  ]
+}
