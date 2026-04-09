@@ -143,10 +143,27 @@ Recommended deployment:
 	- Swagger works at /api/docs.
 	- Register/login and create/publish property flow works.
 
+### Seed and Smoke Validation
+
+Run once after migrations:
+
+```bash
+cd backend
+npm run seed
+npm run smoke:test
+```
+
+Seeded test users:
+
+- admin@propertyplatform.com / Password123!
+- owner@propertyplatform.com / Password123!
+- user@propertyplatform.com / Password123!
+
 ### Supabase Notes
 
 - Use pooled URL for runtime to handle concurrent app traffic efficiently.
 - Use direct URL for Prisma migrate deploy to avoid migration issues with poolers.
+- If your local network cannot reach the direct host (`db.<project-ref>.supabase.co`), use the session pooler URL temporarily for `DIRECT_DATABASE_URL` during local migration/seed runs.
 - Keep SSL mode enabled in both URLs.
 
 ### Local Validation Before Deploy
@@ -164,36 +181,3 @@ Frontend:
 1. cd frontend
 2. npm run build
 3. npm run lint
-
-## Supabase Database Deployment
-
-1. Create a new Supabase project.
-2. In Supabase dashboard, copy the Postgres connection string and set `sslmode=require`.
-3. In backend deployment environment, set variables from `backend/.env.supabase.example`.
-4. Use the direct Postgres connection (port 5432) for `DATABASE_URL` when running Prisma migrations.
-5. Deploy database schema with:
-
-```bash
-cd backend
-npm run prisma:generate
-npm run prisma:migrate:deploy
-```
-
-6. Verify tables exist in Supabase SQL editor (`users`, `properties`, `property_images`, `favorites`, `contact_messages`).
-
-Migration files are committed in:
-
-- `backend/prisma/migrations/202604090001_init/migration.sql`
-- `backend/prisma/migrations/migration_lock.toml`
-
-## Final Pre-Deployment Checklist
-
-- Backend build passes: `cd backend && npm run build`
-- Frontend build passes: `cd frontend && npm run build`
-- Backend env is configured in hosting provider.
-- Frontend env is configured (`NEXT_PUBLIC_API_URL`).
-- Run `npm run prisma:migrate:deploy` against Supabase.
-- Verify Swagger is reachable at `/api/docs`.
-- Update live URLs in the top of this README.
-
-After deployment, update the Live URLs section above.
