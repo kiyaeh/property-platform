@@ -55,6 +55,10 @@ export type FavoriteRecord = {
   createdAt: string;
 };
 
+export type FavoriteWithPropertyRecord = FavoriteRecord & {
+  property: PropertyRecord;
+};
+
 export type AdminMetrics = {
   users: {
     total: number;

@@ -4,6 +4,7 @@ type EnvVars = {
   DATABASE_URL?: string;
   JWT_SECRET?: string;
   JWT_EXPIRES_IN?: string;
+  FRONTEND_URL?: string;
 };
 
 export type AppConfig = {
@@ -12,6 +13,7 @@ export type AppConfig = {
   DATABASE_URL: string;
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
+  FRONTEND_URL?: string;
 };
 
 export function validateEnv(config: EnvVars): AppConfig {
@@ -43,5 +45,6 @@ export function validateEnv(config: EnvVars): AppConfig {
     DATABASE_URL: config.DATABASE_URL,
     JWT_SECRET: config.JWT_SECRET,
     JWT_EXPIRES_IN: config.JWT_EXPIRES_IN ?? '1d',
+    FRONTEND_URL: config.FRONTEND_URL,
   };
 }

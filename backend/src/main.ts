@@ -4,10 +4,31 @@ import { ValidationPipe } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
+type CorsCallback = (error: Error | null, allow?: boolean) => void;
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  const frontendUrl = process.env.FRONTEND_URL;
+  const defaultDevOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  const allowedOrigins = frontendUrl
+    ? frontendUrl
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0)
+    : defaultDevOrigins;
+
+  app.enableCors({
+    origin: (origin: string | undefined, callback: CorsCallback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error('CORS origin not allowed'));
+    },
+    credentials: true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

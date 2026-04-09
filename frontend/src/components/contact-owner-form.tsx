@@ -44,17 +44,17 @@ export function ContactOwnerForm({ propertyId }: ContactOwnerFormProps) {
   }
 
   if (!isHydrated) {
-    return <p className="text-sm text-slate-500">Loading contact form...</p>;
+    return <p className="text-sm text-blue-500">Loading contact form...</p>;
   }
 
   return (
-    <section className="mt-10 rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="text-xl font-semibold text-slate-900">Contact Owner</h2>
-      <p className="mt-1 text-sm text-slate-600">Ask availability, terms, or viewing details.</p>
+    <section className="panel mt-10 p-5">
+      <h2 className="text-xl font-semibold text-blue-950">Contact Owner</h2>
+      <p className="mt-1 text-sm text-blue-700">Ask availability, terms, or viewing details.</p>
 
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <textarea
-          className="min-h-28 w-full rounded-md border border-slate-300 px-3 py-2"
+          className="field min-h-28"
           placeholder="Write your message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -67,7 +67,7 @@ export function ContactOwnerForm({ propertyId }: ContactOwnerFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-60"
+          className="btn-primary px-4 py-2 disabled:opacity-60"
         >
           {isSubmitting ? 'Sending...' : 'Send Message'}
         </button>

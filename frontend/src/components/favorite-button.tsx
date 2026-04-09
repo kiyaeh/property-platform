@@ -57,7 +57,7 @@ export function FavoriteButton({ propertyId }: FavoriteButtonProps) {
   }
 
   if (!isHydrated || !favoritesHydrated) {
-    return <span className="text-xs text-slate-500">Loading...</span>;
+    return <span className="text-xs text-blue-500">Loading...</span>;
   }
 
   return (
@@ -66,7 +66,7 @@ export function FavoriteButton({ propertyId }: FavoriteButtonProps) {
         type="button"
         onClick={toggleFavorite}
         disabled={isPending}
-        className="rounded-md border border-slate-300 px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        className="btn-secondary px-3 py-1 text-sm disabled:opacity-50"
       >
         {isPending ? 'Saving...' : isFavorite ? 'Saved' : 'Save'}
       </button>

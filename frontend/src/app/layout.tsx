@@ -29,10 +29,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col text-blue-950">
         <AuthSessionBootstrap />
         <FavoritesSync />
-        {children}
+        <div className="relative flex min-h-screen flex-col">{children}</div>
       </body>
     </html>
   );

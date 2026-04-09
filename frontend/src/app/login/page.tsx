@@ -43,51 +43,65 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-6 py-12">
-      <h1 className="text-3xl font-bold text-slate-900">Login</h1>
-      <p className="mt-2 text-slate-600">Access your account to manage properties and favorites.</p>
+    <main className="page-shell-tight flex min-h-screen items-center">
+      <section className="w-full overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-[0_18px_50px_rgba(29,78,216,0.14)]">
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          <aside className="hidden bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 p-8 text-white md:block">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-100">Welcome Back</p>
+            <h2 className="mt-3 text-3xl font-bold leading-tight">Access your dashboard and listings instantly.</h2>
+            <p className="mt-4 text-sm text-blue-50/95">
+              Manage properties, favorites, and account-specific workflows from a single control surface.
+            </p>
+          </aside>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-4 rounded-xl border border-slate-200 p-5">
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-slate-700">Email</span>
-          <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
+          <div className="p-6 sm:p-8">
+            <h1 className="text-4xl font-bold tracking-tight text-blue-950">Login</h1>
+            <p className="mt-2 text-blue-700">Access your account to manage properties and favorites.</p>
 
-        <label className="block space-y-2">
-          <span className="text-sm font-medium text-slate-700">Password</span>
-          <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-        </label>
+            <form onSubmit={onSubmit} className="mt-8 space-y-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-blue-800">Email</span>
+                <input
+                  className="field"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
 
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-blue-800">Password</span>
+                <input
+                  className="field"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                />
+              </label>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full rounded-md bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-60"
-        >
-          {isSubmitting ? 'Signing in...' : 'Sign in'}
-        </button>
-      </form>
+              {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
-      <p className="mt-4 text-sm text-slate-600">
-        Need an account?{' '}
-        <Link className="font-semibold text-slate-900 underline" href="/register">
-          Register
-        </Link>
-      </p>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn-primary w-full px-4 py-2 disabled:opacity-60"
+              >
+                {isSubmitting ? 'Signing in...' : 'Sign in'}
+              </button>
+            </form>
+
+            <p className="mt-4 text-sm text-blue-700">
+              Need an account?{' '}
+              <Link className="font-semibold text-blue-950 underline" href="/register">
+                Register
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

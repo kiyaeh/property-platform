@@ -4,9 +4,9 @@ This repository contains the full-stack practical exam implementation for the In
 
 ## Live URLs
 
-- Frontend URL: TODO
-- Backend API URL: TODO
-- Swagger URL: TODO/api/docs
+- Frontend URL: https://property-platform-eta.vercel.app
+- Backend API URL: https://property-platform-3.onrender.com
+- Swagger URL: https://property-platform-3.onrender.com/api/docs
 
 ## Tech Stack
 
@@ -120,6 +120,14 @@ Recommended deployment:
 - Backend: Render or Railway
 - Database: Supabase PostgreSQL
 
+### Frontend Deploy on Vercel (Current Setup)
+
+- Framework Preset: Next.js
+- Root Directory: `frontend`
+- Build Command: `npm run build`
+- Install Command: `npm install`
+- Environment Variable: `NEXT_PUBLIC_API_URL=https://property-platform-3.onrender.com`
+
 ### Supabase DB Deployment (Final Checklist)
 
 1. Create a Supabase project and open Project Settings -> Database.
@@ -134,8 +142,9 @@ Recommended deployment:
 	- JWT_SECRET=<long random secret>
 	- JWT_EXPIRES_IN=1d
 4. Ensure backend build/deploy command includes migrations:
-	- Build: npm install && npm run build
-	- Start: npm run prisma:deploy:supabase && npm run start:prod
+	- Build: npm run build:render
+	- Start: npm run start:render
+	- Important: Do not run `npm run start:prod` inside the Build Command. That causes `Cannot find module dist/main` during build-time.
 5. In frontend hosting provider (Vercel), set:
 	- NEXT_PUBLIC_API_URL=<deployed backend https url>
 6. Verify production endpoints:

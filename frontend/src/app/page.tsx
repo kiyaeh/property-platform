@@ -2,36 +2,28 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-6 py-16">
-      <div className="w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-12">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900">
-          Property Platform
+    <main className="page-shell flex min-h-screen items-center justify-center">
+      <section className="panel-soft w-full max-w-3xl p-8 text-center sm:p-12">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-blue-700">Property Platform</p>
+        <h1 className="mt-4 text-4xl font-bold tracking-tight text-blue-950 sm:text-5xl">
+          Simple way to discover and manage properties
         </h1>
-        <p className="mt-4 text-lg text-slate-600">
-          Browse published properties, save favorites, and manage listings by role.
+        <p className="mx-auto mt-4 max-w-2xl text-blue-700">
+          Browse listings, save favorites, and manage properties with role-based dashboards.
         </p>
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href="/properties"
-            className="rounded-md bg-slate-900 px-4 py-2 font-semibold text-white"
-          >
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link href="/properties" className="btn-primary px-5 py-3 text-sm font-semibold">
             Explore Properties
           </Link>
-          <Link
-            href="/login"
-            className="rounded-md border border-slate-300 px-4 py-2 font-semibold text-slate-700"
-          >
+          <Link href="/login" className="btn-secondary px-5 py-3 text-sm font-semibold">
             Login
           </Link>
-          <Link
-            href="/register"
-            className="rounded-md border border-slate-300 px-4 py-2 font-semibold text-slate-700"
-          >
+          <Link href="/register" className="btn-secondary px-5 py-3 text-sm font-semibold">
             Register
           </Link>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

@@ -1,5 +1,4 @@
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:4000';
+import { API_URL } from './api-url';
 
 export class ApiError extends Error {
   readonly status: number;

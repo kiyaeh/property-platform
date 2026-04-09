@@ -28,12 +28,12 @@ export function AuthGuard({ allowedRoles, children }: AuthGuardProps) {
   }, [token, isHydrated, router]);
 
   if (!isHydrated || !token) {
-    return <p className="p-6 text-slate-700">Checking your session...</p>;
+    return <p className="p-6 text-blue-800">Checking your session...</p>;
   }
 
   if (!hasRequiredRole(user?.role, allowedRoles)) {
     return (
-      <div className="mx-auto my-10 max-w-lg rounded-lg border border-amber-400 bg-amber-50 p-6 text-amber-900">
+      <div className="panel mx-auto my-10 max-w-lg border-amber-300 bg-amber-50 p-6 text-amber-900">
         <h2 className="text-xl font-semibold">Access denied</h2>
         <p className="mt-2">Your account does not have permission to view this page.</p>
         <Link className="mt-4 inline-block underline" href="/">

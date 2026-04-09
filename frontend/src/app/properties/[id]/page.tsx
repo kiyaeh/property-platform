@@ -1,21 +1,29 @@
 import { notFound } from 'next/navigation';
 import { ContactOwnerForm } from '../../../components/contact-owner-form';
 import { FavoriteButton } from '../../../components/favorite-button';
+import { API_URL } from '../../../lib/api-url';
 import { PropertyRecord } from '../../../lib/types';
 
 type PropertyDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:4000';
-
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
   const { id } = await params;
 
-  const response = await fetch(`${API_URL}/properties/${id}`, {
-    cache: 'no-store',
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_URL}/properties/${id}`, {
+      cache: 'no-store',
+    });
+  } catch {
+    return (
+      <main className="page-shell max-w-4xl">
+        <p className="text-red-600">Unable to load property details.</p>
+      </main>
+    );
+  }
 
   if (response.status === 404) {
     notFound();
@@ -23,7 +31,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
   if (!response.ok) {
     return (
-      <main className="mx-auto w-full max-w-4xl px-6 py-12">
+      <main className="page-shell max-w-4xl">
         <p className="text-red-600">Unable to load property details.</p>
       </main>
     );
@@ -32,20 +40,22 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
   const property = (await response.json()) as PropertyRecord;
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-10">
-      <header className="flex items-start justify-between gap-4">
+    <main className="page-shell max-w-4xl">
+      <header className="panel flex items-start justify-between gap-4 p-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{property.title}</h1>
-          <p className="mt-2 text-slate-600">{property.location}</p>
+          <h1 className="text-3xl font-bold text-blue-950">{property.title}</h1>
+          <p className="mt-2 text-blue-700">{property.location}</p>
         </div>
         <FavoriteButton propertyId={property.id} />
       </header>
 
-      <p className="mt-4 text-2xl font-semibold text-slate-900">${property.price.toLocaleString()}</p>
-      <p className="mt-6 whitespace-pre-line text-slate-700">{property.description}</p>
+      <section className="panel mt-6 p-6">
+        <p className="text-2xl font-semibold text-blue-950">${property.price.toLocaleString()}</p>
+        <p className="mt-4 whitespace-pre-line text-blue-800">{property.description}</p>
+      </section>
 
-      <section className="mt-8">
-        <h2 className="text-xl font-semibold text-slate-900">Images</h2>
+      <section className="panel mt-8 p-6">
+        <h2 className="text-xl font-semibold text-blue-950">Images</h2>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {property.images.map((image) => (
             <a
@@ -53,7 +63,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
               href={image.url}
               target="_blank"
               rel="noreferrer"
-              className="rounded-md border border-slate-200 p-3 text-sm text-slate-700 underline"
+              className="rounded-md border border-blue-100 p-3 text-sm text-blue-800 underline"
             >
               {image.url}
             </a>

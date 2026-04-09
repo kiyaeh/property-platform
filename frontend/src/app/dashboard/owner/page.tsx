@@ -2,9 +2,10 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthGuard } from '../../../components/auth-guard';
+import { FeedbackToast } from '../../../components/feedback-toast';
 import { LogoutButton } from '../../../components/logout-button';
 import { ApiError, apiFetch, getAuthHeader } from '../../../lib/api';
-import { PropertyListResponse } from '../../../lib/types';
+import { PropertyListResponse, PropertyRecord } from '../../../lib/types';
 import { useAuthStore } from '../../../store/auth-store';
 
 type ImageInput = {
@@ -33,8 +34,21 @@ export default function OwnerDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'>('ALL');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isPublishingId, setIsPublishingId] = useState<string | null>(null);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string>('');
+
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editPrice, setEditPrice] = useState<number>(1000);
+  const [editImages, setEditImages] = useState<ImageInput[]>([emptyImage(), emptyImage()]);
+  const [initialEditSnapshot, setInitialEditSnapshot] = useState<string>('');
 
   const queryStatus = useMemo(
     () => (statusFilter === 'ALL' ? '' : `?status=${statusFilter}`),
@@ -56,6 +70,7 @@ export default function OwnerDashboardPage() {
         },
       );
       setItems(response.data);
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load properties');
     } finally {
@@ -88,6 +103,7 @@ export default function OwnerDashboardPage() {
       setPrice(1000);
       setImages([emptyImage(), emptyImage()]);
       await loadProperties();
+      setSuccessMessage('Draft property created successfully.');
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Unable to create property');
     } finally {
@@ -101,14 +117,18 @@ export default function OwnerDashboardPage() {
     }
 
     setActionError(null);
+    setIsPublishingId(propertyId);
     try {
       await apiFetch(`/owner/properties/${propertyId}/publish`, {
         method: 'POST',
         headers: getAuthHeader(token),
       });
       await loadProperties();
+      setSuccessMessage('Property published successfully.');
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Unable to publish property');
+    } finally {
+      setIsPublishingId(null);
     }
   }
 
@@ -118,14 +138,18 @@ export default function OwnerDashboardPage() {
     }
 
     setActionError(null);
+    setIsDeletingId(propertyId);
     try {
       await apiFetch<{ success: boolean }>(`/owner/properties/${propertyId}`, {
         method: 'DELETE',
         headers: getAuthHeader(token),
       });
       await loadProperties();
+      setSuccessMessage('Property deleted successfully.');
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Unable to delete property');
+    } finally {
+      setIsDeletingId(null);
     }
   }
 
@@ -149,43 +173,247 @@ export default function OwnerDashboardPage() {
     setImages((current) => current.filter((_, i) => i !== index));
   }
 
+  function beginEditDraft(property: PropertyRecord) {
+    if (property.status !== 'DRAFT') {
+      return;
+    }
+
+    setEditingPropertyId(property.id);
+    setEditTitle(property.title);
+    setEditDescription(property.description);
+    setEditLocation(property.location);
+    setEditPrice(property.price);
+
+    const mappedImages = property.images.map((image) => ({
+      url: image.url,
+      mimeType: image.mimeType as ImageInput['mimeType'],
+      size: image.size,
+    }));
+
+    const normalizedImages = mappedImages.length >= 2 ? mappedImages : [emptyImage(), emptyImage()];
+    setEditImages(normalizedImages);
+    setInitialEditSnapshot(
+      JSON.stringify({
+        title: property.title,
+        description: property.description,
+        location: property.location,
+        price: property.price,
+        images: normalizedImages,
+      }),
+    );
+    setActionError(null);
+  }
+
+  const hasUnsavedDraftChanges = useMemo(() => {
+    if (!editingPropertyId) {
+      return false;
+    }
+
+    const currentSnapshot = JSON.stringify({
+      title: editTitle,
+      description: editDescription,
+      location: editLocation,
+      price: editPrice,
+      images: editImages,
+    });
+    return currentSnapshot !== initialEditSnapshot;
+  }, [
+    editingPropertyId,
+    editTitle,
+    editDescription,
+    editLocation,
+    editPrice,
+    editImages,
+    initialEditSnapshot,
+  ]);
+
+  function cancelEditDraft() {
+    if (hasUnsavedDraftChanges) {
+      const approved = window.confirm(
+        'You have unsaved draft changes. Discard them?',
+      );
+      if (!approved) {
+        return;
+      }
+    }
+
+    setEditingPropertyId(null);
+    setEditTitle('');
+    setEditDescription('');
+    setEditLocation('');
+    setEditPrice(1000);
+    setEditImages([emptyImage(), emptyImage()]);
+    setInitialEditSnapshot('');
+  }
+
+  function updateEditImage(index: number, next: Partial<ImageInput>) {
+    setEditImages((current) =>
+      current.map((image, i) => (i === index ? { ...image, ...next } : image)),
+    );
+  }
+
+  function addEditImageRow() {
+    if (editImages.length >= 10) {
+      return;
+    }
+    setEditImages((current) => [...current, emptyImage()]);
+  }
+
+  function removeEditImageRow(index: number) {
+    if (editImages.length <= 2) {
+      return;
+    }
+    setEditImages((current) => current.filter((_, i) => i !== index));
+  }
+
+  async function saveEditDraft(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token || !editingPropertyId) {
+      return;
+    }
+
+    setActionError(null);
+    setIsSavingEdit(true);
+    try {
+      await apiFetch(`/owner/properties/${editingPropertyId}`, {
+        method: 'PATCH',
+        headers: getAuthHeader(token),
+        body: JSON.stringify({
+          title: editTitle,
+          description: editDescription,
+          location: editLocation,
+          price: editPrice,
+          images: editImages,
+        }),
+      });
+      setEditingPropertyId(null);
+      setEditTitle('');
+      setEditDescription('');
+      setEditLocation('');
+      setEditPrice(1000);
+      setEditImages([emptyImage(), emptyImage()]);
+      setInitialEditSnapshot('');
+      await loadProperties();
+      setSuccessMessage('Draft changes saved successfully.');
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Unable to save draft changes');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!editingPropertyId) {
+      return;
+    }
+
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      const currentSnapshot = JSON.stringify({
+        title: editTitle,
+        description: editDescription,
+        location: editLocation,
+        price: editPrice,
+        images: editImages,
+      });
+      if (currentSnapshot === initialEditSnapshot) {
+        return;
+      }
+
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [
+    editingPropertyId,
+    editTitle,
+    editDescription,
+    editLocation,
+    editPrice,
+    editImages,
+    initialEditSnapshot,
+  ]);
+
+  const draftCount = items.filter((property) => property.status === 'DRAFT').length;
+  const publishedCount = items.filter((property) => property.status === 'PUBLISHED').length;
+  const archivedCount = items.filter((property) => property.status === 'ARCHIVED').length;
+
   return (
     <AuthGuard allowedRoles={['OWNER']}>
-      <main className="mx-auto w-full max-w-4xl px-6 py-10">
-        <header className="flex items-center justify-between">
+      <main className="page-shell max-w-5xl">
+        <FeedbackToast
+          message={successMessage}
+          onClose={() => setSuccessMessage(null)}
+        />
+
+        <header className="dashboard-hero flex flex-wrap items-center justify-between gap-4 p-6">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Owner Dashboard</h1>
-            <p className="mt-2 text-slate-600">Manage your listings, {user?.name ?? 'Owner'}.</p>
+            <h1 className="text-3xl font-bold text-blue-950">Owner Dashboard</h1>
+            <p className="mt-2 text-blue-700">Manage your listings, {user?.name ?? 'Owner'}.</p>
+            {lastUpdated ? (
+              <p className="mt-1 text-xs font-medium text-blue-600">Last synced: {lastUpdated}</p>
+            ) : null}
           </div>
-          <LogoutButton />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void loadProperties()}
+              className="btn-secondary px-3 py-2 text-sm"
+            >
+              Refresh
+            </button>
+            <LogoutButton />
+          </div>
         </header>
 
-        <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
-          <h2 className="text-xl font-semibold text-slate-900">Create Property</h2>
+        <section className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <article className="metric-tile p-4">
+            <p className="text-sm text-blue-700">Draft Listings</p>
+            <p className="mt-1 text-2xl font-bold text-blue-950">{draftCount}</p>
+          </article>
+          <article className="metric-tile p-4">
+            <p className="text-sm text-blue-700">Published Listings</p>
+            <p className="mt-1 text-2xl font-bold text-blue-950">{publishedCount}</p>
+          </article>
+          <article className="metric-tile p-4">
+            <p className="text-sm text-blue-700">Archived Listings</p>
+            <p className="mt-1 text-2xl font-bold text-blue-950">{archivedCount}</p>
+          </article>
+        </section>
+
+        <section className="panel mt-8 p-6">
+          <div>
+            <h2 className="text-xl font-semibold text-blue-950">Create Property</h2>
+            <p className="mt-1 text-sm text-blue-700">
+              Draft first, then publish after your listing is complete and validated.
+            </p>
+          </div>
           <form onSubmit={onCreate} className="mt-4 space-y-3">
             <input
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
+              className="field"
               placeholder="Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
             <textarea
-              className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2"
+              className="field min-h-24"
               placeholder="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
             />
             <input
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
+              className="field"
               placeholder="Location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               required
             />
             <input
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
+              className="field"
               type="number"
               min={1}
               placeholder="Price"
@@ -194,29 +422,29 @@ export default function OwnerDashboardPage() {
               required
             />
 
-            <div className="space-y-3 rounded-md border border-slate-200 p-3">
+            <div className="space-y-3 rounded-md border border-blue-100 bg-blue-50/40 p-3">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-slate-800">Images (min 2)</h3>
+                <h3 className="font-semibold text-blue-900">Images (min 2)</h3>
                 <button
                   type="button"
                   onClick={addImageRow}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                  className="btn-secondary px-2 py-1 text-sm"
                 >
                   Add image
                 </button>
               </div>
 
               {images.map((image, index) => (
-                <div key={index} className="grid gap-2 rounded-md border border-slate-200 p-3 sm:grid-cols-4">
+                <div key={index} className="grid gap-2 rounded-md border border-blue-100 bg-white p-3 sm:grid-cols-4">
                   <input
-                    className="rounded-md border border-slate-300 px-2 py-1 sm:col-span-2"
+                    className="field sm:col-span-2"
                     placeholder="Image URL"
                     value={image.url}
                     onChange={(e) => updateImage(index, { url: e.target.value })}
                     required
                   />
                   <select
-                    className="rounded-md border border-slate-300 px-2 py-1"
+                    className="field"
                     value={image.mimeType}
                     onChange={(e) =>
                       updateImage(index, {
@@ -230,7 +458,7 @@ export default function OwnerDashboardPage() {
                   </select>
                   <div className="flex gap-2">
                     <input
-                      className="w-full rounded-md border border-slate-300 px-2 py-1"
+                      className="field"
                       type="number"
                       min={1}
                       max={5000000}
@@ -240,7 +468,7 @@ export default function OwnerDashboardPage() {
                     <button
                       type="button"
                       onClick={() => removeImageRow(index)}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+                      className="btn-secondary px-2 py-1 text-sm"
                     >
                       Remove
                     </button>
@@ -253,18 +481,21 @@ export default function OwnerDashboardPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-md bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-60"
+              className="btn-primary px-4 py-2 disabled:opacity-60"
             >
               {isSubmitting ? 'Creating...' : 'Create draft'}
             </button>
           </form>
         </section>
 
-        <section className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
+        <section className="panel mt-8 p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold text-slate-900">My Properties</h2>
+            <div>
+              <h2 className="text-xl font-semibold text-blue-950">My Properties</h2>
+              <p className="mt-1 text-sm text-blue-700">Track status and run publish or delete actions.</p>
+            </div>
             <select
-              className="rounded-md border border-slate-300 px-3 py-2"
+              className="field w-auto min-w-40"
               value={statusFilter}
               onChange={(e) =>
                 setStatusFilter(
@@ -279,42 +510,177 @@ export default function OwnerDashboardPage() {
             </select>
           </div>
 
-          {isLoading ? <p className="mt-4 text-slate-600">Loading properties...</p> : null}
+          {isLoading ? <p className="mt-4 text-blue-700">Loading properties...</p> : null}
           {error ? <p className="mt-4 text-red-600">{error}</p> : null}
 
           <div className="mt-4 space-y-3">
             {items.map((property) => (
-              <article key={property.id} className="rounded-md border border-slate-200 p-3">
+              <article key={property.id} className="rounded-lg border border-blue-100 bg-blue-50/20 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h3 className="font-semibold text-slate-900">{property.title}</h3>
-                    <p className="text-sm text-slate-600">
-                      {property.location} • ${property.price.toLocaleString()} • {property.status}
+                    <h3 className="font-semibold text-blue-950">{property.title}</h3>
+                    <p className="text-sm text-blue-700">
+                      {property.location} • ${property.price.toLocaleString()}
                     </p>
+                    <span
+                      className={`mt-2 ${
+                        property.status === 'PUBLISHED'
+                          ? 'status-chip published'
+                          : property.status === 'ARCHIVED'
+                            ? 'status-chip archived'
+                            : 'status-chip draft'
+                      }`}
+                    >
+                      {property.status}
+                    </span>
                   </div>
                   <div className="flex gap-2">
                     {property.status === 'DRAFT' ? (
                       <button
                         type="button"
-                        onClick={() => publishProperty(property.id)}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-sm"
+                        onClick={() => beginEditDraft(property)}
+                        className="btn-secondary px-3 py-1 text-sm"
                       >
-                        Publish
+                        Edit
+                      </button>
+                    ) : null}
+                    {property.status === 'DRAFT' ? (
+                      <button
+                        type="button"
+                        onClick={() => publishProperty(property.id)}
+                        disabled={isPublishingId === property.id}
+                        className="btn-secondary px-3 py-1 text-sm disabled:opacity-60"
+                      >
+                        {isPublishingId === property.id ? 'Publishing...' : 'Publish'}
                       </button>
                     ) : null}
                     <button
                       type="button"
                       onClick={() => deleteProperty(property.id)}
-                      className="rounded-md border border-slate-300 px-3 py-1 text-sm text-red-700"
+                      disabled={isDeletingId === property.id}
+                      className="btn-secondary px-3 py-1 text-sm text-red-700 disabled:opacity-60"
                     >
-                      Delete
+                      {isDeletingId === property.id ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                 </div>
+
+                {editingPropertyId === property.id ? (
+                  <form onSubmit={saveEditDraft} className="mt-4 space-y-3 rounded-md border border-blue-100 bg-white p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-sm font-semibold text-blue-900">Edit Draft</h4>
+                      <button
+                        type="button"
+                        onClick={cancelEditDraft}
+                        className="btn-secondary px-2 py-1 text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+
+                    <input
+                      className="field"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="Title"
+                      required
+                    />
+                    <textarea
+                      className="field min-h-24"
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="Description"
+                      required
+                    />
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      <input
+                        className="field"
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                        placeholder="Location"
+                        required
+                      />
+                      <input
+                        className="field"
+                        type="number"
+                        min={1}
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(Number(e.target.value))}
+                        placeholder="Price"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2 rounded-md border border-blue-100 bg-blue-50/40 p-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-blue-900">Images (min 2)</p>
+                        <button
+                          type="button"
+                          onClick={addEditImageRow}
+                          className="btn-secondary px-2 py-1 text-xs"
+                        >
+                          Add image
+                        </button>
+                      </div>
+
+                      {editImages.map((image, index) => (
+                        <div key={index} className="grid gap-2 rounded-md border border-blue-100 bg-white p-3 sm:grid-cols-4">
+                          <input
+                            className="field sm:col-span-2"
+                            placeholder="Image URL"
+                            value={image.url}
+                            onChange={(e) => updateEditImage(index, { url: e.target.value })}
+                            required
+                          />
+                          <select
+                            className="field"
+                            value={image.mimeType}
+                            onChange={(e) =>
+                              updateEditImage(index, {
+                                mimeType: e.target.value as ImageInput['mimeType'],
+                              })
+                            }
+                          >
+                            <option value="image/jpeg">image/jpeg</option>
+                            <option value="image/png">image/png</option>
+                            <option value="image/webp">image/webp</option>
+                          </select>
+                          <div className="flex gap-2">
+                            <input
+                              className="field"
+                              type="number"
+                              min={1}
+                              max={5000000}
+                              value={image.size}
+                              onChange={(e) =>
+                                updateEditImage(index, { size: Number(e.target.value) })
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeEditImageRow(index)}
+                              className="btn-secondary px-2 py-1 text-xs"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSavingEdit}
+                      className="btn-primary px-3 py-2 text-sm disabled:opacity-60"
+                    >
+                      {isSavingEdit ? 'Saving...' : 'Save Draft'}
+                    </button>
+                  </form>
+                ) : null}
               </article>
             ))}
             {!isLoading && items.length === 0 ? (
-              <p className="text-slate-600">No properties found for this filter.</p>
+              <p className="text-blue-700">No properties found for this filter.</p>
             ) : null}
           </div>
         </section>
