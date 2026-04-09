@@ -24,6 +24,11 @@ export class AdminPropertiesController {
     return this.propertiesService.listForAdmin(query);
   }
 
+  @Get('/metrics')
+  metrics() {
+    return this.propertiesService.getAdminMetrics();
+  }
+
   @Patch(':id/disable')
   disable(@Param('id') id: string) {
     return this.propertiesService.disableAsAdmin(id);

@@ -136,7 +136,19 @@ export class PropertiesService {
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
-        include: { images: true, owner: true },
+        include: {
+          images: true,
+          owner: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
+        },
       }),
       this.prisma.property.count({ where }),
     ]);
@@ -348,5 +360,134 @@ export class PropertiesService {
       },
       include: { images: true },
     });
+  }
+
+  async addFavorite(userId: string, propertyId: string) {
+    const property = await this.prisma.property.findFirst({
+      where: {
+        id: propertyId,
+        deletedAt: null,
+        status: PropertyStatus.PUBLISHED,
+      },
+      select: { id: true },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+
+    return this.prisma.favorite.upsert({
+      where: {
+        userId_propertyId: {
+          userId,
+          propertyId: property.id,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        propertyId: property.id,
+      },
+    });
+  }
+
+  async removeFavorite(userId: string, propertyId: string): Promise<void> {
+    await this.prisma.favorite.deleteMany({
+      where: {
+        userId,
+        propertyId,
+      },
+    });
+  }
+
+  async listFavorites(userId: string) {
+    const favorites = await this.prisma.favorite.findMany({
+      where: {
+        userId,
+        property: {
+          deletedAt: null,
+          status: PropertyStatus.PUBLISHED,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        property: {
+          include: {
+            images: true,
+          },
+        },
+      },
+    });
+
+    return favorites;
+  }
+
+  async contactOwner(userId: string, propertyId: string, message: string) {
+    const property = await this.prisma.property.findFirst({
+      where: {
+        id: propertyId,
+        deletedAt: null,
+        status: PropertyStatus.PUBLISHED,
+      },
+      select: {
+        id: true,
+        ownerId: true,
+      },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Property not found');
+    }
+
+    if (property.ownerId === userId) {
+      throw new BadRequestException(
+        'You cannot contact yourself for your own property',
+      );
+    }
+
+    return this.prisma.contactMessage.create({
+      data: {
+        propertyId: property.id,
+        senderId: userId,
+        message,
+      },
+    });
+  }
+
+  async getAdminMetrics() {
+    const [
+      totalUsers,
+      totalOwners,
+      totalProperties,
+      publishedProperties,
+      draftProperties,
+      archivedProperties,
+    ] = await this.prisma.$transaction([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { role: 'OWNER' } }),
+      this.prisma.property.count({ where: { deletedAt: null } }),
+      this.prisma.property.count({
+        where: { deletedAt: null, status: PropertyStatus.PUBLISHED },
+      }),
+      this.prisma.property.count({
+        where: { deletedAt: null, status: PropertyStatus.DRAFT },
+      }),
+      this.prisma.property.count({
+        where: { deletedAt: null, status: PropertyStatus.ARCHIVED },
+      }),
+    ]);
+
+    return {
+      users: {
+        total: totalUsers,
+        owners: totalOwners,
+      },
+      properties: {
+        total: totalProperties,
+        published: publishedProperties,
+        draft: draftProperties,
+        archived: archivedProperties,
+      },
+    };
   }
 }
