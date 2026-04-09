@@ -12,6 +12,12 @@ enum Role {
   USER
 }
 
+enum PropertyStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -20,6 +26,42 @@ model User {
   role         Role     @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  properties   Property[]
 
   @@map("users")
+}
+
+model Property {
+  id          String         @id @default(uuid())
+  ownerId     String
+  owner       User           @relation(fields: [ownerId], references: [id])
+  title       String
+  description String
+  location    String
+  price       Int
+  status      PropertyStatus @default(DRAFT)
+  publishedAt DateTime?
+  deletedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  images      PropertyImage[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([location])
+  @@index([price])
+  @@map("properties")
+}
+
+model PropertyImage {
+  id         String   @id @default(uuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url        String
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+  @@map("property_images")
 }
