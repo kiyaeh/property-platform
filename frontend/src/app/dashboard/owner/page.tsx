@@ -20,6 +20,85 @@ const emptyImage = (): ImageInput => ({
   size: 100000,
 });
 
+function normalizeImageUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  // Handle common copy/paste wrappers from docs/chats.
+  const unwrapped = trimmed
+    .replace(/^['"<\(\[]+/, '')
+    .replace(/[\]\)>,'".]+$/, '');
+
+  if (unwrapped.startsWith('//')) {
+    return `https:${unwrapped}`;
+  }
+
+  if (!/^https?:\/\//i.test(unwrapped)) {
+    return `https://${unwrapped}`;
+  }
+
+  return unwrapped;
+}
+
+function getValidHttpUrl(value: string): string | null {
+  const candidates = [value, encodeURI(value)];
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = new URL(candidate);
+      if (['http:', 'https:'].includes(parsed.protocol)) {
+        return parsed.toString();
+      }
+    } catch {
+      // Try next candidate.
+    }
+  }
+
+  return null;
+}
+
+function validateAndNormalizeImages(images: ImageInput[]): {
+  valid: boolean;
+  normalized: ImageInput[];
+  message?: string;
+} {
+  const normalized: ImageInput[] = images.map((image) => ({
+    ...image,
+    url: normalizeImageUrl(image.url),
+  }));
+
+  for (let index = 0; index < normalized.length; index += 1) {
+    const item = normalized[index];
+    if (!item.url) {
+      return {
+        valid: false,
+        normalized,
+        message: `Image ${index + 1} URL is required.`,
+      };
+    }
+
+    const validUrl = getValidHttpUrl(item.url);
+    if (!validUrl) {
+      return {
+        valid: false,
+        normalized,
+        message:
+          `Image ${index + 1} URL is invalid. Use a direct image link like ` +
+          `https://example.com/photo.jpg`,
+      };
+    }
+
+    normalized[index] = {
+      ...item,
+      url: validUrl,
+    };
+  }
+
+  return { valid: true, normalized };
+}
+
 export default function OwnerDashboardPage() {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
@@ -91,11 +170,25 @@ export default function OwnerDashboardPage() {
     setIsSubmitting(true);
     setActionError(null);
 
+    const normalizedResult = validateAndNormalizeImages(images);
+    setImages(normalizedResult.normalized);
+    if (!normalizedResult.valid) {
+      setActionError(normalizedResult.message ?? 'Invalid image URLs.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await apiFetch('/owner/properties', {
         method: 'POST',
         headers: getAuthHeader(token),
-        body: JSON.stringify({ title, description, location, price, images }),
+        body: JSON.stringify({
+          title,
+          description,
+          location,
+          price,
+          images: normalizedResult.normalized,
+        }),
       });
       setTitle('');
       setDescription('');
@@ -275,6 +368,15 @@ export default function OwnerDashboardPage() {
 
     setActionError(null);
     setIsSavingEdit(true);
+
+    const normalizedResult = validateAndNormalizeImages(editImages);
+    setEditImages(normalizedResult.normalized);
+    if (!normalizedResult.valid) {
+      setActionError(normalizedResult.message ?? 'Invalid image URLs.');
+      setIsSavingEdit(false);
+      return;
+    }
+
     try {
       await apiFetch(`/owner/properties/${editingPropertyId}`, {
         method: 'PATCH',
@@ -284,7 +386,7 @@ export default function OwnerDashboardPage() {
           description: editDescription,
           location: editLocation,
           price: editPrice,
-          images: editImages,
+          images: normalizedResult.normalized,
         }),
       });
       setEditingPropertyId(null);

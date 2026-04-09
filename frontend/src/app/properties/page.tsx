@@ -12,6 +12,32 @@ type PropertiesPageProps = {
   }>;
 };
 
+async function fetchPropertiesWithRetry(url: string): Promise<Response> {
+  const delays = [0, 800, 1800] as const;
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < delays.length; attempt += 1) {
+    if (delays[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    }
+
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok || response.status < 500) {
+        return response;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return fetch(url, { cache: 'no-store' });
+}
+
 export default async function PropertiesPage({ searchParams }: PropertiesPageProps) {
   const params = await searchParams;
   const query = new URLSearchParams();
@@ -24,14 +50,12 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
   let response: Response;
 
   try {
-    response = await fetch(`${API_URL}/properties?${query.toString()}`, {
-      cache: 'no-store',
-    });
+    response = await fetchPropertiesWithRetry(`${API_URL}/properties?${query.toString()}`);
   } catch {
     return (
       <main className="page-shell max-w-5xl">
         <h1 className="text-3xl font-bold text-blue-950">Properties</h1>
-        <p className="mt-4 text-red-600">Unable to load properties right now.</p>
+        <p className="mt-4 text-red-600">Unable to load properties right now. Please retry in a few seconds.</p>
       </main>
     );
   }
@@ -40,7 +64,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
     return (
       <main className="page-shell max-w-5xl">
         <h1 className="text-3xl font-bold text-blue-950">Properties</h1>
-        <p className="mt-4 text-red-600">Unable to load properties right now.</p>
+        <p className="mt-4 text-red-600">Unable to load properties right now. Please retry in a few seconds.</p>
       </main>
     );
   }

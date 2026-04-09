@@ -14,7 +14,9 @@ export default function UserDashboardPage() {
   const token = useAuthStore((state) => state.token);
 
   const [favorites, setFavorites] = useState<FavoriteWithPropertyRecord[]>([]);
+  const [discover, setDiscover] = useState<PropertyListResponse['data']>([]);
   const [publishedTotal, setPublishedTotal] = useState(0);
+  const [favoriteQuery, setFavoriteQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMutatingId, setIsMutatingId] = useState<string | null>(null);
@@ -29,15 +31,17 @@ export default function UserDashboardPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [favoritesResult, propertiesResult] = await Promise.all([
+      const [favoritesResult, propertiesResult, discoverResult] = await Promise.all([
         apiFetch<FavoriteWithPropertyRecord[]>('/users/favorites', {
           headers: getAuthHeader(token),
         }),
         apiFetch<PropertyListResponse>('/properties?page=1&limit=1'),
+        apiFetch<PropertyListResponse>('/properties?page=1&limit=4'),
       ]);
 
       setFavorites(favoritesResult);
       setPublishedTotal(propertiesResult.meta.total);
+      setDiscover(discoverResult.data);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to load user dashboard data');
@@ -80,6 +84,19 @@ export default function UserDashboardPage() {
     ],
     [favorites.length, publishedTotal],
   );
+
+  const filteredFavorites = useMemo(() => {
+    if (!favoriteQuery.trim()) {
+      return favorites;
+    }
+
+    const query = favoriteQuery.trim().toLowerCase();
+    return favorites.filter((favorite) =>
+      `${favorite.property.title} ${favorite.property.location}`
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [favorites, favoriteQuery]);
 
   return (
     <AuthGuard allowedRoles={['USER']}>
@@ -131,11 +148,18 @@ export default function UserDashboardPage() {
             </Link>
           </div>
 
+          <input
+            className="field mt-4"
+            placeholder="Search your favorites by title or location"
+            value={favoriteQuery}
+            onChange={(e) => setFavoriteQuery(e.target.value)}
+          />
+
           {isLoading ? <p className="mt-4 text-blue-700">Loading your favorites...</p> : null}
           {error ? <p className="mt-4 text-red-600">{error}</p> : null}
 
           <div className="mt-4 space-y-3">
-            {favorites.map((favorite) => (
+            {filteredFavorites.map((favorite) => (
               <article key={favorite.id} className="rounded-lg border border-blue-100 bg-blue-50/20 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -165,10 +189,46 @@ export default function UserDashboardPage() {
               </article>
             ))}
 
-            {!isLoading && favorites.length === 0 ? (
+            {!isLoading && filteredFavorites.length === 0 ? (
               <p className="text-blue-700">
-                You have no favorites yet. Explore listings and save the ones you like.
+                {favorites.length === 0
+                  ? 'You have no favorites yet. Explore listings and save the ones you like.'
+                  : 'No favorites match your search query.'}
               </p>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="panel mt-8 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-blue-950">Discover More</h2>
+              <p className="mt-1 text-sm text-blue-700">
+                Quick access to recently published properties.
+              </p>
+            </div>
+            <Link href="/properties" className="btn-secondary px-4 py-2 text-sm">
+              See all listings
+            </Link>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+            {discover.map((property) => (
+              <article key={property.id} className="rounded-lg border border-blue-100 bg-blue-50/20 p-4">
+                <h3 className="font-semibold text-blue-950">{property.title}</h3>
+                <p className="mt-1 text-sm text-blue-700">{property.location}</p>
+                <p className="mt-2 text-sm font-semibold text-blue-900">${property.price.toLocaleString()}</p>
+                <Link
+                  href={`/properties/${property.id}`}
+                  className="mt-3 inline-block text-sm font-semibold text-blue-900 underline"
+                >
+                  View details
+                </Link>
+              </article>
+            ))}
+
+            {!isLoading && discover.length === 0 ? (
+              <p className="text-blue-700">No published properties available right now.</p>
             ) : null}
           </div>
         </section>
