@@ -6,6 +6,7 @@ This repository contains the full-stack practical exam implementation for the In
 
 - Frontend URL: TODO
 - Backend API URL: TODO
+- Swagger URL: TODO/api/docs
 
 ## Tech Stack
 
@@ -13,7 +14,7 @@ This repository contains the full-stack practical exam implementation for the In
 - Frontend: Next.js (App Router)
 - State Management: Zustand
 - Database: PostgreSQL (Prisma)
-- API Documentation: Postman collection in docs/property-platform.postman_collection.json
+- API Documentation: Swagger at /api/docs and Postman collection in docs/property-platform.postman_collection.json
 
 ## Why These Choices
 
@@ -28,6 +29,12 @@ I selected Zustand for focused client state needs:
 - Persisted authentication across refresh.
 - Favorites local state with optimistic UI and cross-tab synchronization.
 - Lightweight API and low boilerplate for exam timeframe.
+
+Why not TanStack Query for this exam scope:
+
+- Most frontend state in this project is session and UI state (auth token, active user, favorites sync), which Zustand handles directly with less setup.
+- TanStack Query excels at server-cache orchestration; this app currently benefits more from simple store persistence and direct fetch flows.
+- To avoid over-engineering within the 7-day practical limit, Zustand keeps the implementation small and easier to reason about.
 
 ### Access control enforcement
 
@@ -97,7 +104,11 @@ The first bottlenecks will likely be:
 
 ## API Documentation
 
-Use the Postman collection:
+Swagger endpoint:
+
+- /api/docs
+
+Postman collection:
 
 - docs/property-platform.postman_collection.json
 

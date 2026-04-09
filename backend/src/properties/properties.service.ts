@@ -305,10 +305,10 @@ export class PropertiesService {
         !property.description.trim() ||
         !property.location.trim() ||
         property.price <= 0 ||
-        property.images.length === 0
+        property.images.length < 2
       ) {
         throw new BadRequestException(
-          'Property must have complete data and at least one image before publishing',
+          'Property must have complete data and at least two images before publishing',
         );
       }
 

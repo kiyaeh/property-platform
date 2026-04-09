@@ -47,3 +47,23 @@ export type PropertyListResponse = {
     totalPages: number;
   };
 };
+
+export type FavoriteRecord = {
+  id: string;
+  userId: string;
+  propertyId: string;
+  createdAt: string;
+};
+
+export type AdminMetrics = {
+  users: {
+    total: number;
+    owners: number;
+  };
+  properties: {
+    total: number;
+    published: number;
+    draft: number;
+    archived: number;
+  };
+};

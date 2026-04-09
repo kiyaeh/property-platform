@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsInt,
   IsOptional,
@@ -31,6 +33,8 @@ export class UpdatePropertyDto {
 
   @IsOptional()
   @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => PropertyImageInputDto)
   images?: PropertyImageInputDto[];

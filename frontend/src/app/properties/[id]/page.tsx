@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { ContactOwnerForm } from '../../../components/contact-owner-form';
 import { FavoriteButton } from '../../../components/favorite-button';
 import { PropertyRecord } from '../../../lib/types';
 
@@ -59,6 +60,8 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
           ))}
         </div>
       </section>
+
+      <ContactOwnerForm propertyId={property.id} />
     </main>
   );
 }

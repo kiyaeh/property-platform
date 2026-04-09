@@ -2,13 +2,9 @@
 
 import { useEffect } from 'react';
 import { apiFetch, getAuthHeader } from '../lib/api';
-import { AuthUser } from '../lib/types';
+import { AuthUser, FavoriteRecord } from '../lib/types';
 import { useAuthStore } from '../store/auth-store';
 import { useFavoritesStore } from '../store/favorites-store';
-
-type FavoriteRecord = {
-  propertyId: string;
-};
 
 export function AuthSessionBootstrap() {
   const token = useAuthStore((state) => state.token);

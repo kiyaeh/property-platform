@@ -1,9 +1,9 @@
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
+  ArrayMaxSize,
   IsArray,
   IsInt,
-  IsOptional,
   IsString,
   Max,
   Min,
@@ -26,10 +26,10 @@ export class CreatePropertyDto {
   @Max(1_000_000_000)
   price: number;
 
-  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
+  @ArrayMinSize(2)
+  @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => PropertyImageInputDto)
-  images?: PropertyImageInputDto[];
+  images: PropertyImageInputDto[];
 }
