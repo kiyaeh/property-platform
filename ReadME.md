@@ -120,6 +120,51 @@ Recommended deployment:
 - Backend: Render or Railway
 - Database: Supabase PostgreSQL
 
+### Supabase DB Deployment (Final Checklist)
+
+1. Create a Supabase project and open Project Settings -> Database.
+2. Copy two connection strings:
+	- Pooled URL for runtime app traffic.
+	- Direct URL for migrations.
+3. In backend hosting provider (Render/Railway), set env vars:
+	- NODE_ENV=production
+	- PORT=4000
+	- DATABASE_URL=<supabase pooled url>
+	- DIRECT_DATABASE_URL=<supabase direct url>
+	- JWT_SECRET=<long random secret>
+	- JWT_EXPIRES_IN=1d
+4. Ensure backend build/deploy command includes migrations:
+	- Build: npm install && npm run build
+	- Start: npm run prisma:deploy:supabase && npm run start:prod
+5. In frontend hosting provider (Vercel), set:
+	- NEXT_PUBLIC_API_URL=<deployed backend https url>
+6. Verify production endpoints:
+	- Health/API routes are reachable.
+	- Swagger works at /api/docs.
+	- Register/login and create/publish property flow works.
+
+### Supabase Notes
+
+- Use pooled URL for runtime to handle concurrent app traffic efficiently.
+- Use direct URL for Prisma migrate deploy to avoid migration issues with poolers.
+- Keep SSL mode enabled in both URLs.
+
+### Local Validation Before Deploy
+
+Backend:
+
+1. cd backend
+2. npm run prisma:generate
+3. npm run build
+4. npm run lint
+5. npm test -- --runInBand
+
+Frontend:
+
+1. cd frontend
+2. npm run build
+3. npm run lint
+
 ## Supabase Database Deployment
 
 1. Create a new Supabase project.
