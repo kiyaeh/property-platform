@@ -6,6 +6,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 type CorsCallback = (error: Error | null, allow?: boolean) => void;
 
+function normalizeOrigin(value: string): string {
+  return value.trim().replace(/\/+$/, '');
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -14,18 +18,23 @@ async function bootstrap() {
   const allowedOrigins = frontendUrl
     ? frontendUrl
         .split(',')
-        .map((origin) => origin.trim())
+        .map(normalizeOrigin)
         .filter((origin) => origin.length > 0)
-    : defaultDevOrigins;
+    : defaultDevOrigins.map(normalizeOrigin);
 
   app.enableCors({
     origin: (origin: string | undefined, callback: CorsCallback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) {
         callback(null, true);
         return;
       }
 
-      callback(new Error('CORS origin not allowed'));
+      if (allowedOrigins.includes(normalizeOrigin(origin))) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
     },
     credentials: true,
   });
