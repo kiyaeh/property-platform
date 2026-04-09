@@ -11,14 +11,24 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     UsersModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET', { infer: true }),
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRES_IN', {
-            infer: true,
-          }),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.getOrThrow<string>('JWT_SECRET', {
+          infer: true,
+        });
+        const rawExpiresIn = configService.get<string>('JWT_EXPIRES_IN', {
+          infer: true,
+        });
+        const expiresInSeconds = Number(rawExpiresIn);
+
+        return {
+          secret,
+          signOptions: {
+            expiresIn: Number.isFinite(expiresInSeconds)
+              ? expiresInSeconds
+              : 86_400,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

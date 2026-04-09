@@ -118,6 +118,37 @@ Recommended deployment:
 
 - Frontend: Vercel
 - Backend: Render or Railway
-- Database: Neon PostgreSQL
+- Database: Supabase PostgreSQL
+
+## Supabase Database Deployment
+
+1. Create a new Supabase project.
+2. In Supabase dashboard, copy the Postgres connection string and set `sslmode=require`.
+3. In backend deployment environment, set variables from `backend/.env.supabase.example`.
+4. Use the direct Postgres connection (port 5432) for `DATABASE_URL` when running Prisma migrations.
+5. Deploy database schema with:
+
+```bash
+cd backend
+npm run prisma:generate
+npm run prisma:migrate:deploy
+```
+
+6. Verify tables exist in Supabase SQL editor (`users`, `properties`, `property_images`, `favorites`, `contact_messages`).
+
+Migration files are committed in:
+
+- `backend/prisma/migrations/202604090001_init/migration.sql`
+- `backend/prisma/migrations/migration_lock.toml`
+
+## Final Pre-Deployment Checklist
+
+- Backend build passes: `cd backend && npm run build`
+- Frontend build passes: `cd frontend && npm run build`
+- Backend env is configured in hosting provider.
+- Frontend env is configured (`NEXT_PUBLIC_API_URL`).
+- Run `npm run prisma:migrate:deploy` against Supabase.
+- Verify Swagger is reachable at `/api/docs`.
+- Update live URLs in the top of this README.
 
 After deployment, update the Live URLs section above.

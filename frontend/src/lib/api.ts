@@ -47,5 +47,9 @@ export async function apiFetch<T>(
 }
 
 export function getAuthHeader(token: string | null) {
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  if (!token) {
+    return {} as Record<string, string>;
+  }
+
+  return { Authorization: `Bearer ${token}` };
 }

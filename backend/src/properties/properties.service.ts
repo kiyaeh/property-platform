@@ -194,7 +194,7 @@ export class PropertiesService {
       throw new NotFoundException('Property not found');
     }
 
-    if (user.role === Role.ADMIN || property.ownerId === user.sub) {
+    if (user.role === Role.Admin || property.ownerId === user.sub) {
       return property;
     }
 
