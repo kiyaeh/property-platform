@@ -14,6 +14,12 @@ type ImageInput = {
   size: number;
 };
 
+type UploadedImageResponse = {
+  url: string;
+  mimeType: ImageInput['mimeType'];
+  size: number;
+};
+
 const emptyImage = (): ImageInput => ({
   url: '',
   mimeType: 'image/jpeg',
@@ -114,6 +120,8 @@ export default function OwnerDashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [uploadingCreateIndex, setUploadingCreateIndex] = useState<number | null>(null);
+  const [uploadingEditIndex, setUploadingEditIndex] = useState<number | null>(null);
   const [isPublishingId, setIsPublishingId] = useState<string | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -266,6 +274,33 @@ export default function OwnerDashboardPage() {
     setImages((current) => current.filter((_, i) => i !== index));
   }
 
+  async function uploadCreateImage(index: number, file: File) {
+    if (!token) {
+      return;
+    }
+
+    setActionError(null);
+    setUploadingCreateIndex(index);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploaded = await apiFetch<UploadedImageResponse>('/owner/properties/images/upload', {
+        method: 'POST',
+        headers: getAuthHeader(token),
+        body: formData,
+      });
+
+      updateImage(index, uploaded);
+      setSuccessMessage('Image uploaded successfully.');
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Unable to upload image');
+    } finally {
+      setUploadingCreateIndex(null);
+    }
+  }
+
   function beginEditDraft(property: PropertyRecord) {
     if (property.status !== 'DRAFT') {
       return;
@@ -357,6 +392,33 @@ export default function OwnerDashboardPage() {
       return;
     }
     setEditImages((current) => current.filter((_, i) => i !== index));
+  }
+
+  async function uploadEditImage(index: number, file: File) {
+    if (!token) {
+      return;
+    }
+
+    setActionError(null);
+    setUploadingEditIndex(index);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploaded = await apiFetch<UploadedImageResponse>('/owner/properties/images/upload', {
+        method: 'POST',
+        headers: getAuthHeader(token),
+        body: formData,
+      });
+
+      updateEditImage(index, uploaded);
+      setSuccessMessage('Image uploaded successfully.');
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Unable to upload image');
+    } finally {
+      setUploadingEditIndex(null);
+    }
   }
 
   async function saveEditDraft(event: FormEvent<HTMLFormElement>) {
@@ -575,6 +637,25 @@ export default function OwnerDashboardPage() {
                       Remove
                     </button>
                   </div>
+                  <div className="sm:col-span-4 flex flex-wrap items-center gap-2">
+                    <label className="btn-secondary cursor-pointer px-2 py-1 text-xs">
+                      {uploadingCreateIndex === index ? 'Uploading...' : 'Upload file'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={uploadingCreateIndex === index}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            void uploadCreateImage(index, file);
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                    <p className="text-xs text-blue-700">Upload to Supabase or paste an image URL.</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -765,6 +846,25 @@ export default function OwnerDashboardPage() {
                             >
                               Remove
                             </button>
+                          </div>
+                          <div className="sm:col-span-4 flex flex-wrap items-center gap-2">
+                            <label className="btn-secondary cursor-pointer px-2 py-1 text-xs">
+                              {uploadingEditIndex === index ? 'Uploading...' : 'Upload file'}
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                className="hidden"
+                                disabled={uploadingEditIndex === index}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    void uploadEditImage(index, file);
+                                  }
+                                  e.currentTarget.value = '';
+                                }}
+                              />
+                            </label>
+                            <p className="text-xs text-blue-700">Upload to Supabase or paste an image URL.</p>
                           </div>
                         </div>
                       ))}

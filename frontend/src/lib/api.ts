@@ -21,6 +21,13 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
+  const isFormData =
+    typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const headers = new Headers(options.headers ?? undefined);
+  if (!isFormData && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   let response: Response | null = null;
   let lastNetworkError: unknown;
 
@@ -28,10 +35,7 @@ export async function apiFetch<T>(
     try {
       response = await fetch(`${API_URL}${path}`, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options.headers ?? {}),
-        },
+        headers,
         cache: 'no-store',
       });
       break;

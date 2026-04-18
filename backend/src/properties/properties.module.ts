@@ -3,6 +3,7 @@ import { AdminPropertiesController } from './admin-properties.controller';
 import { OwnerPropertiesController } from './owner-properties.controller';
 import { PropertiesController } from './properties.controller';
 import { PropertiesService } from './properties.service';
+import { SupabaseStorageService } from './supabase-storage.service';
 
 @Module({
   controllers: [
@@ -10,7 +11,7 @@ import { PropertiesService } from './properties.service';
     OwnerPropertiesController,
     AdminPropertiesController,
   ],
-  providers: [PropertiesService],
+  providers: [PropertiesService, SupabaseStorageService],
   exports: [PropertiesService],
 })
 export class PropertiesModule {}

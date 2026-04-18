@@ -5,6 +5,9 @@ type EnvVars = {
   JWT_SECRET?: string;
   JWT_EXPIRES_IN?: string;
   FRONTEND_URL?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_STORAGE_BUCKET?: string;
 };
 
 export type AppConfig = {
@@ -14,6 +17,9 @@ export type AppConfig = {
   JWT_SECRET: string;
   JWT_EXPIRES_IN: string;
   FRONTEND_URL?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_STORAGE_BUCKET?: string;
 };
 
 export function validateEnv(config: EnvVars): AppConfig {
@@ -46,5 +52,8 @@ export function validateEnv(config: EnvVars): AppConfig {
     JWT_SECRET: config.JWT_SECRET,
     JWT_EXPIRES_IN: config.JWT_EXPIRES_IN ?? '1d',
     FRONTEND_URL: config.FRONTEND_URL,
+    SUPABASE_URL: config.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: config.SUPABASE_SERVICE_ROLE_KEY,
+    SUPABASE_STORAGE_BUCKET: config.SUPABASE_STORAGE_BUCKET,
   };
 }
